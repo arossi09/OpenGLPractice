@@ -7,11 +7,27 @@ void processInput(GLFWwindow *window);
 
 int main(){
 
-	float verticies[] = {
+	float vertices[] = {
 		-0.5f, -0.5f, 0.0f,
 		 0.5f, -0.5f, 0.0f,
      0.0f,  0.5f, 0.0f
 	};
+
+	/* Vertex Input*/
+	
+	//initialize vertex buffer object to store memory on GPU
+	unsigned int VBO;
+	glGenBuffers(1, &VBO);
+
+	//bind the array buffer to our buffer VBO
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+	//now we can write to the GL_ARRAY_BUFFER and it will write to our VBO
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+
+
+
 
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
