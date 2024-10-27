@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -I./include      # This tells the compiler to look in include/
+CFLAGS = -I./include -g -Wall     # This tells the compiler to look in include
 LDFLAGS = -lglfw -ldl
 
 SRC = src/main.cpp src/glad.c
