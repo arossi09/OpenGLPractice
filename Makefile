@@ -6,3 +6,7 @@ SRC = src/main.cpp src/glad.c
 
 all:
 	$(CC) $(CFLAGS) $(SRC) $(LDFLAGS) -o my_project
+
+clean:
+	@echo Cleaning things...
+	@rm my_project
