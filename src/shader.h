@@ -3,6 +3,11 @@
 
 #include <glad/glad.h>
 
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
+
+// these may be usaeless
 #include <string>
 #include <fstream>
 #include <sstream>
