@@ -18,6 +18,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath){
     fstat(vShaderFile, &vStat);
     fstat(fShaderFile, &fStat);
 
+
     // create buffers for the code
     std::string vertexCode(vStat.st_size, ' ');
     std::string fragmentCode(fStat.st_size, ' ');
@@ -34,7 +35,23 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath){
     const char* fShaderCode = fragmentCode.c_str();
 
     //2. Compile and link Shaders
+    
+    unsigned int vertex, fragment;
+    int success;
+    char infoLog[512];
 
+    // vertex shader
+    vertex = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertex, 1, &vShaderCode, NULL);
+    glCompileShader(vertex);
+
+    //report compile errors
+    glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
+    if(!success){
+        glGetShaderInfoLog(vertex, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" 
+            << infoLog << std::endl;
+    }
 
 
 
