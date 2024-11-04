@@ -1,5 +1,6 @@
 #include <iostream>
 #include <math.h>
+#include "shader.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -8,8 +9,6 @@ void processInput(GLFWwindow *window);
 
 int main(){
     
-    int success;
-	char infoLog[512];
     
     
 /*--Initialize Window--*/
@@ -53,92 +52,9 @@ int main(){
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 
+    Shader ourShader("src/shaders/shader.vs", "src/shaders/shader.fs");
 
 		
-/*-----Vertex Shader----*/
-
-	//instantiating the vertex shader source code to translate the points to
-	//gl_Position.
-	const char *vertexShaderSource = "#version 330 core\n"
-		"layout (location = 0) in vec3 aPos;\n"
-        "layout (location = 1) in vec3 aColor;\n"
-        "out vec3 ourColor;\n"
-		"void main() \n"
-		"{\n"
-		"  gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-        "  ourColor = aColor;\n"
-		"}\0";
-
-	// create vertex shader object
-	unsigned int vertexShader;
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-
-	//attach the shader source code to the shader object and compile
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
-
-	//check if the shader compiled with no errors
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-
-	if(!success){
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR:SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog
-			<< std::endl;
-	}
-
-/*----Fragment Shader--*/
-
-	//creatign the fragment shader to identify the color of each pixel
-	const char *fragmentShaderSource = "#version 330 core\n"
-		"out vec4 FragColor;\n"
-        "in vec3 ourColor;\n"
-		"void main()\n"
-		"{\n"
-		" FragColor = vec4(ourColor, 1.0f);\n"
-		"}\0";
-
-	unsigned int fragmentShader;
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
-
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-
-	if(!success){
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		std::cout << "ERROR:SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog
-			<< std::endl;
-	}
-
-
-
-
-/*---Shader Program----*/
-
-	// create program and returns ID to newly created object
-	unsigned int shaderProgram;
-	shaderProgram = glCreateProgram();
-
-	//attach vertex shader & fragment shader to shader program
-	//and link them
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-
-
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if(!success){
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cout << "ERROR:SHADER::PROGRAM::LINK_FAILED\n" << infoLog
-			<< std::endl;
-	}
-
-
-   
-
-	// Now we can use the shader program os that every shader and rendering call
-	// after ths will now use this program object
-
 /*---Vertex Array Object----*/
 
 	// A VAO stores a vertex attribute configuration and which VBO to use.
@@ -171,7 +87,6 @@ int main(){
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), 
             (void*)(3* sizeof(float)));
     glEnableVertexAttribArray(1);
-    glBindVertexArray(VAO);
 
 
 
@@ -188,17 +103,9 @@ int main(){
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		glUseProgram(shaderProgram);
 
-
-        // change green value on every loop
-        float timeValue = glfwGetTime();
-        float greenValue = sin(timeValue) / 2.0f + 0.5f;
-        //get the shader location
-        int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
-
-		// drawi the first triangle with the first VAO
+        ourShader.use();
+        glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		// check and call events and swap the buffers
@@ -208,9 +115,6 @@ int main(){
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
 
 
 
