@@ -53,7 +53,6 @@ int main(){
 
 
     Shader ourShader("src/shaders/shader.vs", "src/shaders/shader.fs");
-
 		
 /*---Vertex Array Object----*/
 
@@ -104,7 +103,14 @@ int main(){
 		glClear(GL_COLOR_BUFFER_BIT);
 
 
+
         ourShader.use();
+   
+        // alter the horizontal offset unfirom in a sin wave matter
+        float timeValue = glfwGetTime();
+        float offset = sin(timeValue) / 2.0f + .5f;
+        ourShader.setFloat("xOffset", offset);
+
         glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
