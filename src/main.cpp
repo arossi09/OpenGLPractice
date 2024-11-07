@@ -115,13 +115,15 @@ int main(){
 
 /* load and create texture */
 
+    //texture 1
     //use stb_image.h to load the data of the image
     int width, height, nrChannels;
-    
+    stbi_set_flip_vertically_on_load(true);
+
     // creating a texture object
-    unsigned int texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    unsigned int texture1, texture2;
+    glGenTextures(1, &texture1);
+    glBindTexture(GL_TEXTURE_2D, texture1);
 
     // set the texture wrapping/filtering options on current bounded texture
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -145,8 +147,38 @@ int main(){
     // free the texture data
     stbi_image_free(data);
 
+    //texture 2
+    glGenTextures(1, &texture2);
+    glBindTexture(GL_TEXTURE_2D, texture2);
+
+    data = stbi_load("resources/textures/awesomeface.png", &width, 
+            &height, &nrChannels, 0);
 
 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+     if(data){
+        //Generate a texture for the GL_TEXTURE_2D we bounded
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+                GL_UNSIGNED_BYTE, data);
+        //Generate all the needed mipmaps for the bounded texture
+        glGenerateMipmap(GL_TEXTURE_2D); 
+    }else{
+        std::cout << "Failed to load texture" << std::endl;
+    }
+     stbi_image_free(data);
+
+
+
+   
+
+
+    // telling which texture unit each sampler belongs to
+    ourShader.use();
+    ourShader.setInt("texture2", 1);
 
     
 /*-----RENDER LOOP-----*/
@@ -162,8 +194,11 @@ int main(){
 		glClear(GL_COLOR_BUFFER_BIT);
 
 
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture1);
 
-        glBindTexture(GL_TEXTURE_2D, texture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture2);
 
         ourShader.use();
    
