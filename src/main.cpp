@@ -15,8 +15,16 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
+float delta_time = 0.0f; // time between current fram and last frame
+float last_frame = 0.0f; // Time of last frame
 
 float mix_amount = 0.2f;
+// the position vector of the camera
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+// a vector pointing to where the front of the camera
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+// vector relative to what we want the up direction to be
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 int main(){
 
@@ -69,18 +77,16 @@ int main(){
 /*---Build and compile shader program----*/
 
     glEnable(GL_DEPTH_TEST);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     Shader ourShader("src/shaders/shader.vs", "src/shaders/shader.fs");
-
-   //view matrix for the camera
-    glm::mat4 view = glm::mat4(1.0f);
-    //move the objects foward on z simulating the camera moving back
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 
     //projection matrix for perspective
     glm::mat4 projection;
     projection =
-        glm::perspective(glm::radians(45.0f), 800.0f/600.0f, 0.1f, 100.0f);
+        glm::perspective(glm::radians(75.0f), 800.0f/600.0f, 0.1f, 100.0f);
+
+
 
 
 	// vertices input for two triangles to form a rectangle x, y, & z
@@ -126,6 +132,20 @@ int main(){
          0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
         -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+    };
+
+    //different cube positions
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f), 
+        glm::vec3( 2.0f,  5.0f, -15.0f), 
+        glm::vec3(-1.5f, -2.2f, -2.5f),  
+        glm::vec3(-3.8f, -2.0f, -12.3f),  
+        glm::vec3( 2.4f, -0.4f, -3.5f),  
+        glm::vec3(-1.7f,  3.0f, -7.5f),  
+        glm::vec3( 1.3f, -2.0f, -2.5f),  
+        glm::vec3( 1.5f,  2.0f, -2.5f), 
+        glm::vec3( 1.5f,  0.2f, -1.5f), 
+        glm::vec3(-1.3f,  1.0f, -1.5f)  
     };
 
     unsigned int VAO, VBO;
@@ -222,6 +242,10 @@ int main(){
 	// checks at the beggining of each loop if the window should be closed
 	while(!glfwWindowShouldClose(window)){
 
+        float current_frame = glfwGetTime();
+        delta_time = current_frame - last_frame;
+        last_frame = current_frame;
+
 		//input
 		processInput(window);
 
@@ -235,32 +259,36 @@ int main(){
 
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
-        
 
-        //model matrix for world cordinates
-        glm::mat4 model = glm::mat4(1.0f);
-        //rotate the model in circle
-        model = glm::rotate(model,
-            (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+  
+        glm::mat4 view;
+        // setting the camera look at position the second paramter is the
+        // position we are at plus the direction we defined so the camera
+        // keeps looking at the target location
+        view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		ourShader.setFloat("mAmount", mix_amount); 
+        ourShader.setMat4("view", view);
+        ourShader.setMat4("projection", projection);
 
+		glBindVertexArray(VAO);
+        for(unsigned int i = 0; i < 10; i++){
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, cubePositions[i]);
+            float angle = sin(glfwGetTime()) * 75.0f;
 
-		ourShader.setFloat("mAmount", mix_amount);
-     
-        int modelLoc = glGetUniformLocation(ourShader.ID, "model");
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
- 
-        int viewLoc = glGetUniformLocation(ourShader.ID, "view");
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+            if(i%3 == 0)
+                angle = glfwGetTime() * 25.0f;
 
-        int projectionLoc = glGetUniformLocation(ourShader.ID, "projection");
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+            model = glm::rotate(model, 
+                    glm::radians(angle), glm::vec3(0.5f, 1.0f, 0.0f));
+
+            ourShader.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+
 
 
 		ourShader.use();
-		glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-
        
 
 
@@ -313,4 +341,22 @@ void processInput(GLFWwindow *window){
 		}
 		printf("new mix ammount %.2f\n", mix_amount);
 	}
+
+    const float camera_speed = 2.5f * delta_time;
+    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        cameraPos += camera_speed * cameraFront;
+    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        cameraPos -= camera_speed * cameraFront;
+    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * camera_speed;
+    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * camera_speed;
+
+
+
+
+
+
+
+
 }
