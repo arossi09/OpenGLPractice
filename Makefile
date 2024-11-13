@@ -3,7 +3,7 @@ CFLAGS = -I./include -g -Wall     # This tells the compiler to look in include
 LDFLAGS = -lglfw -ldl
 
 SRC = src/main.cpp src/glad.c 
-OBJ = src/shader.o
+OBJ = src/shader.o src/camera.o
 
 TARGET = my_project
 
@@ -16,6 +16,11 @@ $(TARGET): $(SRC) $(OBJ)
 
 src/shader.o: src/shader.cpp
 	$(CC) $(CFLAGS) -c -o src/shader.o src/shader.cpp 
+
+src/camera.o: src/camera.cpp
+	$(CC) $(CFLAGS) -c -o src/camera.o src/camera.cpp 
+
+
 
 clean:
 	@echo "Cleaning things..."
