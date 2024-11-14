@@ -28,6 +28,8 @@ void Camera::ProccessKeyboard(Camera_Movement direction, float deltatime){
         Position -= Right * velocity;
     if(direction == RIGHT)
         Position += Right * velocity;
+
+    Position.y = 0.0f;
     
 }
 
