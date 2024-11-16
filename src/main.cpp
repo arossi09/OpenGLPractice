@@ -1,7 +1,12 @@
 #include <iostream>
+#include "thirdparty/imgui/imgui.h"
+#include "thirdparty/imgui/backends/imgui_impl_glfw.h"
+#include "thirdparty/imgui/backends/imgui_impl_opengl3.h"
 #include <math.h>
 #include "shader.h"
+#include "box.h"
 #include "camera.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -9,8 +14,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+
+#define STB_PERLIN_IMPLEMENTATION
+#include "thirdparty/stb/stb_perlin.h"
 
 
 
@@ -24,19 +30,33 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1600;
+const unsigned int SCR_HEIGHT = 1200;
+
+bool wireframe = false;
+bool cursorVisible = false;
+bool lastState = false;
 
 //camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(5.0f, 5.0f, 20.0f));
+
 float last_x = SCR_WIDTH/2.0f;
 float last_y = SCR_HEIGHT/2.0f;
 bool first_mouse = true;
 
 float delta_time = 0.0f; // time between current fram and last frame
 float last_frame = 0.0f; // Time of last frame
+                        
 
 int main(){ 
+
+    float heightScale = 4.0f;
+    float speedScale = 4.0f;
+    int waveX = 5;
+    int waveZ = 5;
+
+    bool perlin_noise = true;
+    bool sin_wave = false;
 
 	/*--Initialize Window--*/
 
@@ -47,7 +67,8 @@ int main(){
 
 
 	//create the window with size of 800 and 600 title Learn Open GL
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "o:", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "o:", NULL, 
+            NULL);
 
 	//error checking
 	if(window == NULL){
@@ -84,131 +105,33 @@ int main(){
 
 
 
+	glEnable(GL_DEPTH_TEST);
 
 	/*---Build and compile shader program----*/
 
-	glEnable(GL_DEPTH_TEST);
+
 
 	Shader ourShader("src/shaders/shader.vs", "src/shaders/shader.fs");
 
 
 
-	// vertices input for two triangles to form a rectangle x, y, & z
-	float vertices[] = {
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-		0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-		0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-	};
-
-	//different cube positions
-	glm::vec3 cubePositions[] = {
-		glm::vec3( 0.0f,  0.0f,  0.0f), 
-		glm::vec3( 2.0f,  5.0f, -15.0f), 
-		glm::vec3(-1.5f, -2.2f, -2.5f),  
-		glm::vec3(-3.8f, -2.0f, -12.3f),  
-		glm::vec3( 2.4f, -0.4f, -3.5f),  
-		glm::vec3(-1.7f,  3.0f, -7.5f),  
-		glm::vec3( 1.3f, -2.0f, -2.5f),  
-		glm::vec3( 1.5f,  2.0f, -2.5f), 
-		glm::vec3( 1.5f,  0.2f, -1.5f), 
-		glm::vec3(-1.3f,  1.0f, -1.5f)  
-	};
-
-	unsigned int VAO, VBO;
-	glGenVertexArrays(1, &VAO);
-	//initialize vertex buffer object to store memory on GPU
-	glGenBuffers(1, &VBO);
+    Box box("resources/textures/water.jpg");
 
 
-	glBindVertexArray(VAO);
+/*----Im Gui----*/
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
-			GL_STATIC_DRAW);
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
 
-	//vertex attrib pointer for position chords
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
-	//give the vertex attribute the location as its argument
-	glEnableVertexAttribArray(0);
 
-	//vertex attrib pointer for tex cords
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float),
-			(void*)(3*sizeof(float)));
-	glEnableVertexAttribArray(1);
 
-	/* load and create texture */
 
-	//texture 1
-	//use stb_image.h to load the data of the image
-	int width, height, nrChannels;
-	stbi_set_flip_vertically_on_load(true);
-
-	// creating a texture object
-	unsigned int texture1;
-	glGenTextures(1, &texture1);
-	glBindTexture(GL_TEXTURE_2D, texture1);
-
-	// set the texture wrapping/filtering options on current bounded texture
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	unsigned char *data = stbi_load("resources/textures/container.jpg", &width, &height,
-			&nrChannels, 0);
-
-	if(data){
-		//Generate a texture for the GL_TEXTURE_2D we bounded
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
-				GL_UNSIGNED_BYTE, data);
-		//Generate all the needed mipmaps for the bounded texture
-		glGenerateMipmap(GL_TEXTURE_2D); 
-	}else{
-		std::cout << "Failed to load texture" << std::endl;
-	}
-
-	// free the texture data
-	stbi_image_free(data);
-
-	/*-----RENDER LOOP-----*/
+/*-----RENDER LOOP-----*/
 
 	// checks at the beggining of each loop if the window should be closed
 	while(!glfwWindowShouldClose(window)){
@@ -220,58 +143,125 @@ int main(){
 		//input
 		processInput(window);
 
+
+
 		//rendering commands here
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.55f, 0.67f, 0.94f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture1);
 
 		ourShader.use();
 
-		// setting the camera look at position 
-		glm::mat4 view = camera.GetViewMatrix();
-		ourShader.setMat4("view", view);
-
-		//projection matrix for perspective
-		glm::mat4 projection =
-			glm::perspective(glm::radians(75.0f), (float)SCR_WIDTH/SCR_HEIGHT, 0.1f, 100.0f);
-		ourShader.setMat4("projection", projection);
-
-
-		//creating viewport, centered in the bottom right of screen with 
+        //creating viewport, centered in the bottom right of screen with 
 		//dimensions
 		//from before
 		glViewport(0, 0, frameBufferWidth, frameBufferHeight);
 
 
-		glBindVertexArray(VAO);
-		for(unsigned int i = 0; i < 10; i++){
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, cubePositions[i]);
-			float angle = sin(glfwGetTime()) * 75.0f;
+		// setting the camera look at position 
+		glm::mat4 view = camera.GetViewMatrix();
+		ourShader.setMat4("view", view);
 
-			if(i%3 == 0)
-				angle = glfwGetTime() * 25.0f;
+        glm::mat4 model = glm::mat4(1.0f);
+        ourShader.setMat4("model", model);
 
-			model = glm::rotate(model, 
-					glm::radians(angle), glm::vec3(0.5f, 1.0f, 0.0f));
-
-			ourShader.setMat4("model", model);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
-
-        
+        //projection matrix for perspective
+		glm::mat4 projection =
+			glm::perspective(glm::radians(75.0f), (float)SCR_WIDTH/SCR_HEIGHT,
+                    0.1f, 100.0f);
+		ourShader.setMat4("projection", projection);
 
 
-		// check and call events and swap the buffers
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-	}
+       
+        //flag for swapping between wireframe and fill
+        if(wireframe)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        if(!wireframe)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
+	
+
+
+
+        if(perlin_noise){
+
+            //draw the boxes with perlin noise
+            for(int i = 0; i < waveX; i++){
+                for(int j = 0; j < waveZ; j++){
+                    float time = glfwGetTime()*speedScale;
+                    float noise = stb_perlin_noise3(i * 0.1f, j * 0.1f, 
+                            time * 0.1f, 0, 0, 0);
+
+                    float height = noise * heightScale;
+
+                    box.setPosition(glm::vec3(i, height, j));
+                    box.draw(ourShader);            
+                }
+            }
+
+
+        }
+        if(sin_wave){
+
+            //draw the boxes with sin wave function
+            for(int i = 0; i < waveX; i++){
+                for(int j = 0; j < waveZ; j++){
+                    float time = glfwGetTime()*speedScale;
+                    box.setPosition(glm::vec3(i,
+                            (float)sin(time+(i*0.5f)+(j*0.5f)),j));
+                    box.draw(ourShader);
+                }
+            }
+
+        }
+
+
+
+
+     
+
+        glDisable(GL_DEPTH_TEST);
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGui::Begin("Wave Settings");
+
+
+        //handle the swap beetween box checked for sin and perlin noise, so
+        //both boxes can't be ticked at the same time
+        if(ImGui::Checkbox("Perlin Noise", &perlin_noise)){
+            if(perlin_noise){
+                sin_wave = false;
+
+            }
+
+        }
+        if(ImGui::Checkbox("Sin Wave", &sin_wave)){
+            if(sin_wave){
+                perlin_noise = false;
+            }
+
+        }
+        ImGui::SliderFloat("Height Scale", &heightScale,1.0f, 10.0f);
+        ImGui::SliderInt("Wave Width", &waveX, 5, 100); 
+        ImGui::SliderInt("Wave Length", &waveZ, 5, 100);
+        ImGui::SliderFloat("Wave Speed", &speedScale, 1.0f, 10.0f);
+                ImGui::End();
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        glEnable(GL_DEPTH_TEST);
+
+       
+
+        // check and call events and swap the buffers
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
 
 
@@ -285,26 +275,30 @@ int main(){
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn){
 
+    if(!cursorVisible){
 
-	//cast the x and y pos to float so camera class accepts them
-	float xpos = static_cast<float>(xposIn);
-	float ypos = static_cast<float>(yposIn);
+        //cast the x and y pos to float so camera class accepts them
+        float xpos = static_cast<float>(xposIn);
+        float ypos = static_cast<float>(yposIn);
 
-	// to compensate from major change in offset based off creation of window
-	if(first_mouse){
-		last_x = xpos;
-		last_y = ypos;
-		first_mouse = false;
-	}
+        // to compensate from major change in offset based off creation of window
+        if(first_mouse){
+            last_x = xpos;
+            last_y = ypos;
+            first_mouse = false;
+        }
 
-	//calculate the offsets of the x and y position of mouse
-	float xoffset = xpos - last_x;
-	float yoffset = last_y - ypos;
+        //calculate the offsets of the x and y position of mouse
+        float xoffset = xpos - last_x;
+        float yoffset = last_y - ypos;
 
-	last_x = xpos;;
-	last_y = ypos;
+        last_x = xpos;;
+        last_y = ypos;
 
-	camera.ProcessMouseMovement(xoffset, yoffset);
+        camera.ProcessMouseMovement(xoffset, yoffset);
+    }else{
+        first_mouse = true;
+    }
 }
 
 //Set up this function so that every time the windows size is changed
@@ -316,8 +310,29 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height){
 /* Gathers and processes key input fro mthe window*/
 void processInput(GLFWwindow *window){
 
+
+    if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        wireframe = !wireframe;
 	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
+
+    if(glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS){
+
+        lastState = cursorVisible;
+
+
+        cursorVisible = !cursorVisible;
+
+
+
+        if(cursorVisible){
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }else{
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+
+    }
+
 
 	if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		camera.ProccessKeyboard(FORWARD, delta_time);

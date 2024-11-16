@@ -17,7 +17,6 @@ const float PITCH = 0.0f;
 const float SPEED = 2.5f;
 const float SENSITIVITY = 0.1f;
 
-
 class Camera
 {
     public:
@@ -36,6 +35,8 @@ class Camera
         //camera options
         float movement_speed;
         float mouse_sensitivity;
+
+
 
         Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), 
                 glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f),

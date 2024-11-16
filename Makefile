@@ -1,27 +1,41 @@
 CC = g++
-CFLAGS = -I./include -g -Wall     # This tells the compiler to look in include
-LDFLAGS = -lglfw -ldl
+CFLAGS = -I./include -I./$(IMGUI_DIR) -I./$(IMGUI_DIR)/backends -std=c++11 -g -Wall
+LDFLAGS = -lglfw -ldl -lGL
+IMGUI_DIR = src/thirdparty/imgui
 
-SRC = src/main.cpp src/glad.c 
-OBJ = src/shader.o src/camera.o
+SOURCES = src/main.cpp src/camera.cpp src/box.cpp src/shader.cpp src/glad.c
+SOURCES += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp \
+            $(IMGUI_DIR)/backends/imgui_impl_glfw.cpp $(IMGUI_DIR)/backends/imgui_impl_opengl3.cpp
+
+OBJ = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 
 TARGET = my_project
 
+# Default target
 all: $(TARGET)
 
+# Linking the final binary
+$(TARGET): $(OBJ)
+	$(CC) $(CFLAGS) $(OBJ) $(LDFLAGS) -o $(TARGET)
 
-$(TARGET): $(SRC) $(OBJ)
-	$(CC) $(CFLAGS) $(SRC) $(OBJ) $(LDFLAGS) -o $(TARGET)
+# Compile .c files
+%.o: src/%.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
+# Compile .cpp files in the src directory
+%.o: src/%.cpp
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-src/shader.o: src/shader.cpp
-	$(CC) $(CFLAGS) -c -o src/shader.o src/shader.cpp 
+# Compile ImGui .cpp files
+%.o: $(IMGUI_DIR)/%.cpp
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-src/camera.o: src/camera.cpp
-	$(CC) $(CFLAGS) -c -o src/camera.o src/camera.cpp 
+# Compile ImGui backend .cpp files
+%.o: $(IMGUI_DIR)/backends/%.cpp
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-
-
+# Clean the build
 clean:
-	@echo "Cleaning things..."
-	@rm -f $(TARGET) src/*.o
+	@echo "Cleaning up..."
+	rm -f $(OBJ) $(TARGET)
+
