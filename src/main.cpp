@@ -12,7 +12,7 @@
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+
 #include <glm/gtc/type_ptr.hpp>
 
 
@@ -175,8 +175,10 @@ int main(){
             if(perlin_noise)
                 box.drawPerlinWave(ourShader, waveX, waveZ, speedScale, heightScale,
                         glfwGetTime());
-            if(sin_wave)
+            else if(sin_wave)
                 box.drawSinWave(ourShader, waveX, waveZ, speedScale, glfwGetTime());
+            else
+                box.draw(ourShader);
 
         }else if(drawMesh){
             plane.setDiv(div);
@@ -184,7 +186,10 @@ int main(){
             if(perlin_noise)
                 plane.drawPerlinWave(ourShader, speedScale, heightScale,
                         glfwGetTime());
-            if(!perlin_noise)
+            else if(sin_wave)
+                plane.drawSinWave(ourShader, speedScale, heightScale, 
+                        glfwGetTime());
+            else
                 plane.draw(ourShader);
         }
 
@@ -193,7 +198,7 @@ int main(){
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::Begin("Wave Settings");
+        ImGui::Begin("Wave Simulation");
 
         if(ImGui::Checkbox("Plane", &drawMesh)){
             plane.initPlane();
@@ -218,15 +223,22 @@ int main(){
         }
 
         if(ImGui::Checkbox("Sin Wave", &sin_wave)){
+            if(drawMesh)
+                plane.initPlane();
+            if(drawBox)
+                box.initBox();
             if(sin_wave){
                 perlin_noise = false;
             }
 
         }
+        ImGui::Text("Box settings:");
         ImGui::SliderInt("Box Wave Width", &waveX, 5, 100); 
         ImGui::SliderInt("Box Wave Length", &waveZ, 5, 100);
+        ImGui::Text("Plane settings:");
         ImGui::SliderInt("Plane Div Amount", &div, 1.0f, 100.0f);
-        ImGui::SliderFloat("Plane Width Amount", &width, 1.0f, 100.0f);
+        ImGui::SliderFloat("Plane Size", &width, 1.0f, 100.0f);
+        ImGui::Text("Wave Settings:"); 
         ImGui::SliderFloat("Height Scale", &heightScale,1.0f, 10.0f);
         ImGui::SliderFloat("Wave Speed", &speedScale, 1.0f, 10.0f);
         ImGui::End();

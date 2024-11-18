@@ -101,6 +101,31 @@ void Plane::draw(Shader shader){
 
 }
 
+void Plane::drawSinWave(Shader shader, float speedScale, float heightScale, 
+        float time){
+    float scaledTime = speedScale * time;
+    if(needsUpdate){
+        this->initPlane();
+    }
+
+    //alter the heights of the vertices based on sin wave
+    for(int row = 0; row < div + 1; row++){
+        for(int col = 0; col < div+1; col++){
+            int vertexIndex = (row * (div + 1) + col) * 3 + 1;
+            vertices[vertexIndex] =(float)sin(scaledTime+(row*0.5f)+(col*0.5f));
+        }
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size()*sizeof(GLfloat),
+            vertices.data());
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    draw(shader);
+
+
+}
+
 void Plane::drawPerlinWave(Shader shader, float speedScale,
        float heightScale,  float time){
     float scaledTime = speedScale * time;
@@ -114,13 +139,9 @@ void Plane::drawPerlinWave(Shader shader, float speedScale,
         for(int col = 0; col < div+1; col++){
             float noise = stb_perlin_noise3(row * 0.1f, col * 0.1f, 
                     scaledTime * 0.1f, 0, 0, 0);
-
             float height = noise * heightScale;
             int vertexIndex = (row * (div + 1) + col) * 3 + 1;
             vertices[vertexIndex] = height;
-
-
-
         }
     }
 

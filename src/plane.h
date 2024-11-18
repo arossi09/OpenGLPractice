@@ -19,6 +19,9 @@ class Plane{
         void drawPerlinWave(Shader shader, float speedScale,
                 float heightScale, float time);
 
+        void drawSinWave(Shader shader, float speedScale, float heightScale, 
+                float time);
+
         void setDiv(int div);
 
         void setWidth(int width);
