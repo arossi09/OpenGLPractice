@@ -3,11 +3,19 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "thirdparty/stb/stb_image.h"
 
+#define STB_PERLIN_IMPLEMENTATION
+#include "thirdparty/stb/stb_perlin.h"
 
 //constructor for box
 Box::Box(const char *text_path, glm::vec3 position){
 
     Position = position;
+    this->text_path = text_path;
+    
+    initBox();
+}
+
+void Box::initBox(){
 
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -63,6 +71,7 @@ Box::Box(const char *text_path, glm::vec3 position){
 	// free the texture data
 	stbi_image_free(data);
 
+
 }
 
 
@@ -90,4 +99,38 @@ void Box::draw(Shader shader){
 
 }
 
+void Box::drawPerlinWave(Shader shader, int waveX, int waveZ, float speedScale,
+        float heightScale, float time){
+
+
+    float scaledTime = time * speedScale;
+    //draw the boxes with perlin noise
+    for(int i = 0; i < waveX; i++){
+        for(int j = 0; j < waveZ; j++){
+            float noise = stb_perlin_noise3(i * 0.1f, j * 0.1f, 
+                    scaledTime * 0.1f, 0, 0, 0);
+
+            float height = noise * heightScale;
+
+            this->setPosition(glm::vec3(i, height, j));
+            this->draw(shader);
+        }
+    }
+
+
+}
+
+void Box::drawSinWave(Shader shader, int waveX, int waveZ, float speedScale,
+        float time){
+    float scaledTime = time * speedScale;
+    //draw the boxes with sin wave function
+    for(int i = 0; i < waveX; i++){
+        for(int j = 0; j < waveZ; j++){
+            this->setPosition(glm::vec3(i,
+                        (float)sin(scaledTime+(i*0.5f)+(j*0.5f)),j));
+            this->draw(shader);
+        }
+    }
+
+}
 

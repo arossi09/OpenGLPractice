@@ -3,7 +3,7 @@ CFLAGS = -I./include -I./$(IMGUI_DIR) -I./$(IMGUI_DIR)/backends -std=c++11 -g -W
 LDFLAGS = -lglfw -ldl -lGL
 IMGUI_DIR = src/thirdparty/imgui
 
-SOURCES = src/main.cpp src/camera.cpp src/box.cpp src/shader.cpp src/glad.c
+SOURCES = src/main.cpp src/camera.cpp src/box.cpp src/plane.cpp src/shader.cpp src/glad.c
 SOURCES += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp \
             $(IMGUI_DIR)/backends/imgui_impl_glfw.cpp $(IMGUI_DIR)/backends/imgui_impl_opengl3.cpp
 

@@ -65,6 +65,8 @@ class Box{
         Box(const char *text_path, 
                 glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f));
 		
+        void initBox();
+
         ~Box();
 
 		//returns the position of the box
@@ -76,10 +78,21 @@ class Box{
         //draw the box
         void draw(Shader shader);
 
+        //draw a sin wave with width of waveX length of waveZ
+        void drawSinWave(Shader shader, int waveX, int waveZ, float speedScale,
+        float time);
+
+        //draw the perlin noise wave 
+        void drawPerlinWave(Shader shader, int waveX, int waveZ, float speedScale,
+                float heightScale, float time);
+
+
 	private:
 
     	//vector for world position
 		glm::vec3 Position;
+
+        const char *text_path;
 
 
 	
