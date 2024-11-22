@@ -16,8 +16,10 @@
 #include <glm/gtc/type_ptr.hpp>
 
 
-// ctrl ^, %, ctrl b and d, $
-
+//fix the fragment shader so that it takes in the light source
+//vector and multiplies it by the color of the object
+//
+//add a setVec4 to the shader class 
 
 
 
@@ -38,6 +40,7 @@ int frameBufferWidth, frameBufferHeight;
 bool wireframe = false;
 bool cursorVisible = false;
 bool lastState = false;
+bool light_the_scene = false;
 
 //camera
 Camera camera(glm::vec3(5.0f, 5.0f, 20.0f));
@@ -67,8 +70,8 @@ int main(){
     bool sin_wave = false;
 
 
-    bool drawBox = false;
-    bool drawMesh = true;
+    bool drawBox = true;
+    bool drawMesh = false;
     
 
     //Initialize Window
@@ -114,9 +117,22 @@ int main(){
     //build and compile the shader
     Shader ourShader("src/shaders/shader.vs", "src/shaders/shader.fs");
 
+    Shader lights_on_shader("src/shaders/lightingShader.vs", "src/shaders/lightingShader.fs");
+
+    //shader for the light source
+    Shader light_shader("src/shaders/shader.vs", "src/shaders/light_shader.fs");
+    
+
     //creating the box object with the water texture
     Box box("resources/textures/water.jpg");
 
+    //creating the light source box representation
+    Box light_source("resources/textures/water.jpg");
+    glm::vec3 light_pos = glm::vec3(5.0f, 5.0f, 5.0f);
+    light_source.setPosition(light_pos);
+
+
+    //the plane with default div and width amount
     Plane plane(div, width, glm::vec3(0.0f, 0.0f, 0.0f));
 
     //ImGUI Configuration
@@ -146,7 +162,6 @@ int main(){
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        ourShader.use();
 
         //creating viewport, centered in the bottom right of screen
         glViewport(0, 0, frameBufferWidth, frameBufferHeight);
@@ -157,49 +172,70 @@ int main(){
         if(!wireframe)
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+
+
         // setting the camera look at position 
         glm::mat4 view = camera.GetViewMatrix(); 
-        ourShader.setMat4("view", view);
-
         glm::mat4 model = glm::mat4(1.0f);
-        ourShader.setMat4("model", model);
-
         //projection matrix for perspective
         glm::mat4 projection =
             glm::perspective(glm::radians(75.0f), (float)SCR_WIDTH/SCR_HEIGHT,
                     0.1f, 100.0f);
-        ourShader.setMat4("projection", projection);
+        //setting the color of the object and the light
+        glm::vec3 color = glm::vec3(1.0f, 0.5f, 0.5f);
+        glm::vec3 light_color = glm::vec3(0.0f, 0.0f, 1.0f);
 
+        //swaps between shaders based on if lights are on
+        Shader& active_shader = light_the_scene ? lights_on_shader : ourShader;
+
+
+        //sets the uniforms in each shader based on which one is active
+        active_shader.use();
+        active_shader.setMat4("projection", projection);
+        active_shader.setMat4("model", model);
+        active_shader.setMat4("view", view);
+        active_shader.setVec3("objectColor", color);
+        if(light_the_scene){
+            active_shader.setVec3("lightPos", light_pos);
+            active_shader.setVec3("lightColor", light_color);
+
+        }
+        //swap between drawing plane and boxes 
         if(drawBox){
-            //swap between perlin noise and sin wave for box
             if(perlin_noise)
-                box.drawPerlinWave(ourShader, waveX, waveZ, speedScale, heightScale,
+                box.drawPerlinWave(active_shader, waveX, waveZ, speedScale, heightScale,
                         glfwGetTime());
             else if(sin_wave)
-                box.drawSinWave(ourShader, waveX, waveZ, speedScale, glfwGetTime());
+                box.drawSinWave(active_shader, waveX, waveZ, speedScale, glfwGetTime());
             else
-                box.draw(ourShader);
+                box.draw(active_shader);
 
         }else if(drawMesh){
             plane.setDiv(div);
             plane.setWidth(width);
             if(perlin_noise)
-                plane.drawPerlinWave(ourShader, speedScale, heightScale,
+                plane.drawPerlinWave(active_shader, speedScale, heightScale,
                         glfwGetTime());
             else if(sin_wave)
-                plane.drawSinWave(ourShader, speedScale, heightScale, 
-                        glfwGetTime());
+                plane.drawSinWave(active_shader, speedScale,  glfwGetTime());
             else
-                plane.draw(ourShader);
+                plane.draw(active_shader);
         }
 
+        //drawing the light_source block
+        light_shader.use();
+        light_shader.setMat4("view", view);
+        light_shader.setMat4("projection", projection);
+        light_shader.setMat4("model", model);
+        light_shader.setVec3("lightColor",light_color);
+        light_source.draw(light_shader);
 
         glDisable(GL_DEPTH_TEST);
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         ImGui::Begin("Wave Simulation");
-
+        ImGui::Checkbox("Lights", &light_the_scene);
         if(ImGui::Checkbox("Plane", &drawMesh)){
             plane.initPlane();
             if(drawBox)

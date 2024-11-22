@@ -6,6 +6,56 @@
 #define STB_PERLIN_IMPLEMENTATION
 #include "thirdparty/stb/stb_perlin.h"
 
+
+const float NUM_OF_VERTICES = 36;
+
+//vertices for 6 sided box with tex cordinates
+float vertices[] = {
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+};
+
+
+
 //constructor for box
 Box::Box(const char *text_path, glm::vec3 position){
 
@@ -15,66 +65,69 @@ Box::Box(const char *text_path, glm::vec3 position){
     initBox();
 }
 
+//Initalize the box object
 void Box::initBox(){
 
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
+            GL_STATIC_DRAW);
 
     glBindVertexArray(VAO);
 
-
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(VERTICES), VERTICES,
-            GL_STATIC_DRAW);
-
     //vertex attrib pointer for position chords
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
     //give the vertex attribute the location as its argument
     glEnableVertexAttribArray(0);
 
-    //vertex attrib pointer for tex cords
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float),
-            (void*)(3*sizeof(float)));
+    //normal vectors
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3* sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    //texture 1
-	//use stb_image.h to load the data of the image
-	int width, height, nrChannels;
-	stbi_set_flip_vertically_on_load(true);
 
-	// creating a texture object
-	unsigned int texture1;
-	glGenTextures(1, &texture1);
-	glBindTexture(GL_TEXTURE_2D, texture1);
-
-	// set the texture wrapping/filtering options on current bounded texture
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	unsigned char *data = stbi_load(text_path, &width, &height,
-			&nrChannels, 0);
-
-	if(data){
-		//Generate a texture for the GL_TEXTURE_2D we bounded
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
-				GL_UNSIGNED_BYTE, data);
-		//Generate all the needed mipmaps for the bounded texture
-		glGenerateMipmap(GL_TEXTURE_2D); 
-	}else{
-		std::cout << "Failed to load texture" << std::endl;
-	}
+/*    if(text_path){
 
 
-	// free the texture data
-	stbi_image_free(data);
+
+        //texture 1
+        //use stb_image.h to load the data of the image
+        int width, height, nrChannels;
+        stbi_set_flip_vertically_on_load(true);
+
+        // creating a texture object
+        unsigned int texture1;
+        glGenTextures(1, &texture1);
+        glBindTexture(GL_TEXTURE_2D, texture1);
+
+        // set the texture wrapping/filtering options on current bounded texture
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        unsigned char *data = stbi_load(text_path, &width, &height,
+                &nrChannels, 0);
+
+        if(data){
+            //Generate a texture for the GL_TEXTURE_2D we bounded
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
+                    GL_UNSIGNED_BYTE, data);
+            //Generate all the needed mipmaps for the bounded texture
+            glGenerateMipmap(GL_TEXTURE_2D); 
+        }else{
+            std::cout << "Failed to load texture" << std::endl;
+        }
 
 
+        // free the texture data
+        stbi_image_free(data);
+    }
+    */
 }
 
-
+//deconstructor for the box object
 Box::~Box(){
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
@@ -85,12 +138,14 @@ glm::vec3 Box::getPosition(){
     return Position;
 }
 
+//set the position of the box 
 void Box::setPosition(glm::vec3 new_pos){
     Position = new_pos;
 }
 
-
+//Given a shader draws a box
 void Box::draw(Shader shader){
+    glBindVertexArray(VAO);
 		
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, Position);
@@ -99,6 +154,8 @@ void Box::draw(Shader shader){
 
 }
 
+//draws the the perlin noise wave by repositioning a box based on the 
+//the noise and drawing each one
 void Box::drawPerlinWave(Shader shader, int waveX, int waveZ, float speedScale,
         float heightScale, float time){
 
@@ -120,6 +177,7 @@ void Box::drawPerlinWave(Shader shader, int waveX, int waveZ, float speedScale,
 
 }
 
+//Repositions the box based on a sin wave and draws each one 
 void Box::drawSinWave(Shader shader, int waveX, int waveZ, float speedScale,
         float time){
     float scaledTime = time * speedScale;
