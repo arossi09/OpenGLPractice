@@ -191,4 +191,11 @@ void Box::drawSinWave(Shader shader, int waveX, int waveZ, float speedScale,
     }
 
 }
-
+void Box::drawGrid(Shader shader, int waveX, int waveZ){
+    for(int row = 0; row < waveX; row ++){
+        for(int col = 0; col < waveZ; col++){
+            this->setPosition(glm::vec3(row, 1, col));
+            this->draw(shader);
+        }
+    }
+}

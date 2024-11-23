@@ -129,7 +129,6 @@ int main(){
     //creating the light source box representation
     Box light_source("resources/textures/water.jpg");
     glm::vec3 light_pos = glm::vec3(5.0f, 5.0f, 5.0f);
-    light_source.setPosition(light_pos);
 
 
     //the plane with default div and width amount
@@ -142,6 +141,11 @@ int main(){
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
+
+
+    //setting the color of the object and the light
+    glm::vec3 color = glm::vec3(1.0f, 0.5f, 0.5f);
+    glm::vec3 light_color = glm::vec3(1.0f, 1.0f, 1.0f);
 
 
     /*-----RENDER LOOP-----*/
@@ -181,9 +185,6 @@ int main(){
         glm::mat4 projection =
             glm::perspective(glm::radians(75.0f), (float)SCR_WIDTH/SCR_HEIGHT,
                     0.1f, 100.0f);
-        //setting the color of the object and the light
-        glm::vec3 color = glm::vec3(1.0f, 0.5f, 0.5f);
-        glm::vec3 light_color = glm::vec3(0.0f, 0.0f, 1.0f);
 
         //swaps between shaders based on if lights are on
         Shader& active_shader = light_the_scene ? lights_on_shader : ourShader;
@@ -198,6 +199,7 @@ int main(){
         if(light_the_scene){
             active_shader.setVec3("lightPos", light_pos);
             active_shader.setVec3("lightColor", light_color);
+            active_shader.setVec3("viewPos", camera.Position);
 
         }
         //swap between drawing plane and boxes 
@@ -208,7 +210,7 @@ int main(){
             else if(sin_wave)
                 box.drawSinWave(active_shader, waveX, waveZ, speedScale, glfwGetTime());
             else
-                box.draw(active_shader);
+                box.drawGrid(active_shader, waveX, waveZ);
 
         }else if(drawMesh){
             plane.setDiv(div);
@@ -228,13 +230,18 @@ int main(){
         light_shader.setMat4("projection", projection);
         light_shader.setMat4("model", model);
         light_shader.setVec3("lightColor",light_color);
+        light_source.setPosition(light_pos);
         light_source.draw(light_shader);
 
         glDisable(GL_DEPTH_TEST);
+
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         ImGui::Begin("Wave Simulation");
+        ImGui::SliderFloat3("light position", &light_pos[0], 0.0f, 10.0f);
+        ImGui::SliderFloat3("Color of Light", &light_color[0], 0.0f, 1.0f);
         ImGui::Checkbox("Lights", &light_the_scene);
         if(ImGui::Checkbox("Plane", &drawMesh)){
             plane.initPlane();

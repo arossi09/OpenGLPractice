@@ -35,6 +35,8 @@ class Box{
         void drawPerlinWave(Shader shader, int waveX, int waveZ, float speedScale,
                 float heightScale, float time);
 
+        //draw the grid of boxes given the size and shader
+        void drawGrid(Shader shader, int waveX, int waveZ);
 
 	private:
 

@@ -14,5 +14,7 @@ void main()
 {
     gl_Position = projection * view * model * vec4(aPos, 1.0f);
     fragPos = vec3(model * vec4(aPos, 1.0f));
-    Normal = aNormal;
+    //calculate the normal matrix and multiply it by the normal
+    //to account for non-unfirom scalers
+    Normal = mat3(transpose(inverse(model))) * aNormal;
 }
