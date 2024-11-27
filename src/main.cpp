@@ -44,6 +44,7 @@ bool cursorVisible = false;
 bool lastState = false;
 bool light_the_scene = false;
 bool lightSelected = false;
+bool toggleFlashlight = false;
 
 glm::vec3 light_pos = glm::vec3(5.0f, 5.0f, 5.0f);
 
@@ -64,6 +65,8 @@ float last_frame = 0.0f;
 int main(){ 
 
 
+    float light_linear = 0.022f;
+    float light_quadratic = 0.0019f;
     float heightScale = 4.0f;
     float speedScale = 4.0f;
     int waveX = 5;
@@ -73,7 +76,6 @@ int main(){
 
     bool perlin_noise = true;
     bool sin_wave = false;
-
 
     bool drawBox = true;
     bool drawMesh = false;
@@ -151,6 +153,7 @@ int main(){
     glm::vec3 color = glm::vec3(1.0f, 0.5f, 0.5f);
     glm::vec3 light_color = glm::vec3(1.0f, 1.0f, 1.0f);
 
+    glm::vec3 material_color = glm::vec3(1.0f, 0.5f, 0.31f);
 
     /*-----RENDER LOOP-----*/
 
@@ -203,18 +206,33 @@ int main(){
         if(light_the_scene){
             active_shader.setVec3("viewPos", camera.Position);
 
-            active_shader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
-            active_shader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+            active_shader.setVec3("material.ambient", material_color);
+            active_shader.setVec3("material.diffuse", material_color);
             active_shader.setVec3("material.specular", 0.2f, 0.2f, 0.2f);
             active_shader.setFloat("material.shininess", 32.0f);
 
 
             glm::vec3 diffuseColor = light_color * glm::vec3(0.5f, 0.5f, 0.5f);
             glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f, 0.2f, 0.2f);
-            active_shader.setVec3("light.ambient", ambientColor);
-            active_shader.setVec3("light.diffuse", diffuseColor);
-            active_shader.setVec3("light.specular", light_color);
-            active_shader.setVec3("light.position", light_pos);
+            active_shader.setVec3("pointLight.ambient", ambientColor);
+            active_shader.setVec3("pointLight.diffuse", diffuseColor);
+            active_shader.setVec3("pointLight.specular", light_color);
+            active_shader.setVec3("pointLight.position", light_pos);
+            active_shader.setFloat("pointLight.constant", 1.0f);
+            active_shader.setFloat("pointLight.linear", light_linear);
+            active_shader.setFloat("pointLight.quadratic", light_quadratic);
+
+            active_shader.setVec3("spotLight.ambient", ambientColor);
+            active_shader.setVec3("spotLight.diffuse", diffuseColor);
+            active_shader.setVec3("spotLigth.specular", light_color);
+            active_shader.setVec3("spotLight.position", camera.Position);
+            active_shader.setVec3("spotLight.direction", camera.Front);
+            active_shader.setFloat("spotLight.constant", 1.0f);
+            active_shader.setFloat("spotLight.linear", 0.022f);
+            active_shader.setFloat("spotLight.quadratic", 0.0019f);
+            active_shader.setFloat("spotLight.cutoff", glm::cos(glm::radians(12.5f)));
+            active_shader.setFloat("spotLight.outerCutoff", glm::cos(glm::radians(17.5f)));
+            active_shader.setBool("toggleFlashlight", toggleFlashlight);
         }
         //swap between drawing plane and boxes 
         if(drawBox){
@@ -253,19 +271,9 @@ int main(){
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::Begin("Wave Simulation");
-        ImGui::SliderFloat3("Color of Light", &light_color[0], 0.0f, 1.0f);
-        ImGui::Checkbox("Lights", &light_the_scene);
-        if(ImGui::Checkbox("Plane", &drawMesh)){
-            plane.initPlane();
-            if(drawBox)
-                drawBox = false;
-        }
-        if(ImGui::Checkbox("Boxes", &drawBox)){
-            box.initBox();
-            if(drawMesh)
-                drawMesh = false;
-        }
+        ImGui::Begin("Wave Simulation");  
+        ImGui::Text("Wave Settings:"); 
+        ImGui::SliderFloat3("Wave Color", &material_color[0], 0.0f, 1.0f);
         //handle the swap beetween box checked for sin and perlin noise, so
         //both boxes can't be ticked at the same time
         if(ImGui::Checkbox("Perlin Noise", &perlin_noise)){
@@ -288,15 +296,29 @@ int main(){
             }
 
         }
+        ImGui::SliderFloat("Height Scale", &heightScale,1.0f, 10.0f);
+        ImGui::SliderFloat("Wave Speed", &speedScale, 1.0f, 10.0f);
+        ImGui::Text("Light Settings");
+        ImGui::Checkbox("Lights", &light_the_scene);
+        ImGui::SliderFloat3("Color of Light", &light_color[0], 0.0f, 1.0f);
+        ImGui::SliderFloat("Light Linear", &light_linear, 0.0014f, 0.7f);
+        ImGui::SliderFloat("Light Quadratic", &light_quadratic,0.000007f, 1.0f);
         ImGui::Text("Box settings:");
+        if(ImGui::Checkbox("Boxes", &drawBox)){
+            box.initBox();
+            if(drawMesh)
+                drawMesh = false;
+        }
         ImGui::SliderInt("Box Wave Width", &waveX, 5, 100); 
         ImGui::SliderInt("Box Wave Length", &waveZ, 5, 100);
         ImGui::Text("Plane settings:");
+        if(ImGui::Checkbox("Plane", &drawMesh)){
+            plane.initPlane();
+            if(drawBox)
+                drawBox = false;
+        }
         ImGui::SliderInt("Plane Div Amount", &div, 1.0f, 100.0f);
         ImGui::SliderFloat("Plane Size", &width, 1.0f, 100.0f);
-        ImGui::Text("Wave Settings:"); 
-        ImGui::SliderFloat("Height Scale", &heightScale,1.0f, 10.0f);
-        ImGui::SliderFloat("Wave Speed", &speedScale, 1.0f, 10.0f);
         ImGui::End();
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -437,6 +459,7 @@ void processInput(GLFWwindow *window){
 
     static bool eKeyWasPressed = false;
     static bool spaceKeyWasPressed = false;
+    static bool fKeyWasPressed = false;
 
     //toggle draw options between wireframe and fill
     if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !spaceKeyWasPressed){
@@ -448,6 +471,18 @@ void processInput(GLFWwindow *window){
         //reset the e key
         spaceKeyWasPressed = false;
     }
+
+    if(glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && !fKeyWasPressed){
+        toggleFlashlight = !toggleFlashlight;
+        toggleFlashlight = !toggleFlashlight;
+        toggleFlashlight = !toggleFlashlight;
+        fKeyWasPressed = true;
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_F) == GLFW_RELEASE){
+        fKeyWasPressed = false;
+    }
+
 
     // toggle between cursor and camera 
     if(glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && !eKeyWasPressed){
@@ -463,6 +498,7 @@ void processInput(GLFWwindow *window){
         //mark the e key as pressed 
         eKeyWasPressed = true;
     }
+
 
     if(glfwGetKey(window, GLFW_KEY_E) == GLFW_RELEASE){
         //reset the e key
