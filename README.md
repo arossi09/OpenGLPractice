@@ -1,9 +1,12 @@
-# Repository for My Progress of learning OpenGL
+# Wave Simulation
 
 On a linux machine you must install GLFW and OpenGL development libraries
 
-## What the program is currently
-
-* Representation of sin and perlin noise wave
-
-* Dear GUI implemented for wave control
+* Representation of sin and perlin noise wave with dynmaic lights
+* You have the ability to
+    - move light around with mouse
+    - change attributes of wave and lights
+* Controls
+    - f: flashlight
+    - e: toggle cursor
+    - esc: exit
