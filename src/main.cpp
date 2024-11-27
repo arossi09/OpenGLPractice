@@ -29,6 +29,8 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+bool rayIntersectsLight(glm::vec3 rayWorld);
+glm::vec3 calculateRayWorld(float xpos, float ypos, glm::mat4 projection);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -41,6 +43,9 @@ bool wireframe = false;
 bool cursorVisible = false;
 bool lastState = false;
 bool light_the_scene = false;
+bool lightSelected = false;
+
+glm::vec3 light_pos = glm::vec3(5.0f, 5.0f, 5.0f);
 
 //camera
 Camera camera(glm::vec3(5.0f, 5.0f, 20.0f));
@@ -128,7 +133,6 @@ int main(){
 
     //creating the light source box representation
     Box light_source("resources/textures/water.jpg");
-    glm::vec3 light_pos = glm::vec3(5.0f, 5.0f, 5.0f);
 
 
     //the plane with default div and width amount
@@ -197,10 +201,20 @@ int main(){
         active_shader.setMat4("view", view);
         active_shader.setVec3("objectColor", color);
         if(light_the_scene){
-            active_shader.setVec3("lightPos", light_pos);
-            active_shader.setVec3("lightColor", light_color);
             active_shader.setVec3("viewPos", camera.Position);
 
+            active_shader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+            active_shader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+            active_shader.setVec3("material.specular", 0.2f, 0.2f, 0.2f);
+            active_shader.setFloat("material.shininess", 32.0f);
+
+
+            glm::vec3 diffuseColor = light_color * glm::vec3(0.5f, 0.5f, 0.5f);
+            glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f, 0.2f, 0.2f);
+            active_shader.setVec3("light.ambient", ambientColor);
+            active_shader.setVec3("light.diffuse", diffuseColor);
+            active_shader.setVec3("light.specular", light_color);
+            active_shader.setVec3("light.position", light_pos);
         }
         //swap between drawing plane and boxes 
         if(drawBox){
@@ -240,7 +254,6 @@ int main(){
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         ImGui::Begin("Wave Simulation");
-        ImGui::SliderFloat3("light position", &light_pos[0], 0.0f, 10.0f);
         ImGui::SliderFloat3("Color of Light", &light_color[0], 0.0f, 1.0f);
         ImGui::Checkbox("Lights", &light_the_scene);
         if(ImGui::Checkbox("Plane", &drawMesh)){
@@ -309,14 +322,32 @@ int main(){
 
 
 }
+glm::vec3 calculateRayWorld(float xpos, float ypos, glm::mat4 projection){
+
+    //raycastin: we need to convert the 2d cordiante to 3d cordinates
+    //so that the mouse position is relative to the cameras projection
+    //and blocks position in the 3d world
+    float ndcX = (2.0f * xpos) / frameBufferWidth*2-1.0f;
+    float ndcY = 1.0f - (2.0f * ypos) / frameBufferHeight*2; 
+    glm::vec4 rayClip = glm::vec4(ndcX, ndcY,-1.0f,1.0f);
+
+    //we need to tranform the ray to world space
+    glm::vec4 rayEye = glm::inverse(projection) * rayClip;
+    rayEye.z = -1.0f;
+    rayEye.w = 0.0f;
+
+    glm::vec3 rayWorld = glm::vec3(glm::inverse(camera.GetViewMatrix()) * rayEye);
+    return glm::normalize(rayWorld);
+}
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn){
+    //cast the x and y pos to float so camera class accepts them
+    float xpos = static_cast<float>(xposIn);
+    float ypos = static_cast<float>(yposIn);
+
+
 
     if(!cursorVisible){
-
-        //cast the x and y pos to float so camera class accepts them
-        float xpos = static_cast<float>(xposIn);
-        float ypos = static_cast<float>(yposIn);
 
         // to compensate from major change in offset based off creation of window
         if(first_mouse){
@@ -334,10 +365,65 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn){
 
         camera.ProcessMouseMovement(xoffset, yoffset);
     }else{
+        static bool isDragging = false;
+        static glm::vec3 rayWorld;
+
+        glm::mat4 projection =
+            glm::perspective(glm::radians(75.0f), (float)SCR_WIDTH/SCR_HEIGHT,
+                    0.1f, 100.0f);
+
+        if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS){
+            if(!isDragging && lightSelected){
+                isDragging = true;
+            }else{
+                if(lightSelected){
+                    rayWorld = calculateRayWorld(xpos, ypos, projection);
+                    //we need to restrict movement to the XZ plane by making the
+                    //normal the y plane and computing the intersection with this
+                    //plane 
+                    glm::vec3 planeNormal = glm::vec3(camera.Front);
+                    glm::vec3 planePoint = light_pos;
+
+                    float t = glm::dot(planePoint - camera.Position, planeNormal) /
+                        glm::dot(rayWorld, planeNormal);
+                    glm::vec3 intersection = camera.Position + t * rayWorld;
+
+                    light_pos = intersection;
+
+                }
+
+            }
+
+        }
+        if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE){
+            rayWorld = calculateRayWorld(xpos, ypos, projection);
+            lightSelected = rayIntersectsLight(rayWorld); 
+            isDragging = false;
+        }
         first_mouse = true;
     }
 }
 
+bool rayIntersectsLight(glm::vec3 rayWorld){
+    glm::vec3 cubeMin =light_pos - glm::vec3(0.5f);
+    glm::vec3 cubeMax =light_pos + glm::vec3(0.5f);
+
+    glm::vec3 invDir = 1.0f / rayWorld; 
+    glm::vec3 tMin = (cubeMin - camera.Position) * invDir;
+    glm::vec3 tMax = (cubeMax - camera.Position) * invDir;
+
+    glm::vec3 t1 = min(tMin, tMax);
+    glm::vec3 t2 = max(tMin, tMax);
+
+    float tNear = glm::max(glm::max(t1.x, t1.y), t1.z);
+    float tFar = glm::min(glm::min(t2.x, t2.y), t2.z);
+
+    if (tNear <= tFar && tFar >= 0.0f) {
+        return true;
+    } else {
+        return false;
+    }
+}
 //Set up this function so that every time the windows size is changed
 //the following commands are executed
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
@@ -396,3 +482,4 @@ void processInput(GLFWwindow *window){
         camera.ProccessKeyboard(RIGHT, delta_time);
 
 }
+

@@ -47,6 +47,9 @@ void Plane::initPlane(){
             vertices.push_back(crntVec.x);
             vertices.push_back(crntVec.y);
             vertices.push_back(-crntVec.z);
+            vertices.push_back(0.0f);
+            vertices.push_back(1.0f);
+            vertices.push_back(0.0f);
         }
     }
 
@@ -81,10 +84,12 @@ void Plane::initPlane(){
             indices.data(), GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 
-            3*sizeof(GLfloat), (void*)0);
-
+            6*sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(0);
 
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+            6*sizeof(GLfloat), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
 
@@ -116,12 +121,13 @@ void Plane::drawSinWave(Shader shader, float speedScale, float time){
     }
 
     //alter the heights of the vertices based on sin wave
-    for(int row = 0; row < div + 1; row++){
+    for(int row = 0; row < div+1; row++){
         for(int col = 0; col < div+1; col++){
-            int vertexIndex = (row * (div + 1) + col) * 3 + 1;
+            int vertexIndex = (row * (div + 1) + col) * 6 + 1;
             vertices[vertexIndex] =(float)sin(scaledTime+(row*0.5f)+(col*0.5f));
         }
     }
+
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size()*sizeof(GLfloat),
@@ -145,12 +151,12 @@ void Plane::drawPerlinWave(Shader shader, float speedScale,
     }
 
     //alter the heights of the vertices based on perlin noise
-    for(int row = 0; row < div + 1; row++){
+    for(int row = 0; row < div+1; row++){
         for(int col = 0; col < div+1; col++){
             float noise = stb_perlin_noise3(row * 0.1f, col * 0.1f, 
                     scaledTime * 0.1f, 0, 0, 0);
             float height = noise * heightScale;
-            int vertexIndex = (row * (div + 1) + col) * 3 + 1;
+            int vertexIndex = (row * (div + 1) + col) * 6 + 1;
             vertices[vertexIndex] = height;
         }
     }
