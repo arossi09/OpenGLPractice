@@ -1,6 +1,6 @@
 # Wave Simulation
 
-![screenshot]()
+![screenshot](https://github.com/arossi09/WaveSimulation/blob/main/resources/screenshot1.png?raw=true)
 
 On a linux machine you must install GLFW and OpenGL development libraries
 
